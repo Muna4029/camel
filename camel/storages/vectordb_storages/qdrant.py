@@ -12,8 +12,8 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 import logging
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient
@@ -28,7 +28,7 @@ from camel.storages.vectordb_storages import (
 from camel.types import VectorDistance
 from camel.utils import dependencies_required
 
-_qdrant_local_client_map: Dict[str, Tuple[Any, int]] = {}
+_qdrant_local_client_map: dict[str, tuple[Any, int]] = {}
 logger = logging.getLogger(__name__)
 
 
@@ -41,13 +41,13 @@ class QdrantStorage(BaseVectorStorage):
 
     Args:
         vector_dim (int): The dimension of storing vectors.
-        collection_name (Optional[str], optional): Name for the collection in
+        collection_name (str | None, optional): Name for the collection in
             the Qdrant. If not provided, set it to the current time with iso
             format. (default: :obj:`None`)
-        url_and_api_key (Optional[Tuple[str, str]], optional): Tuple containing
+        url_and_api_key (tuple[str, str] | None, optional): Tuple containing
             the URL and API key for connecting to a remote Qdrant instance.
             (default: :obj:`None`)
-        path (Optional[str], optional): Path to a directory for initializing a
+        path (str | None, optional): Path to a directory for initializing a
             local Qdrant client. (default: :obj:`None`)
         distance (VectorDistance, optional): The distance metric for vector
             comparison (default: :obj:`VectorDistance.COSINE`)
@@ -71,9 +71,9 @@ class QdrantStorage(BaseVectorStorage):
     def __init__(
         self,
         vector_dim: int,
-        collection_name: Optional[str] = None,
-        url_and_api_key: Optional[Tuple[str, str]] = None,
-        path: Optional[str] = None,
+        collection_name: str | None = None,
+        url_and_api_key: tuple[str, str] | None = None,
+        path: str | None = None,
         distance: VectorDistance = VectorDistance.COSINE,
         delete_collection_on_del: bool = False,
         **kwargs: Any,
@@ -81,7 +81,7 @@ class QdrantStorage(BaseVectorStorage):
         from qdrant_client import QdrantClient
 
         self._client: QdrantClient
-        self._local_path: Optional[str] = None
+        self._local_path: str | None = None
         self._create_client(url_and_api_key, path, **kwargs)
 
         self.vector_dim = vector_dim
@@ -122,8 +122,8 @@ class QdrantStorage(BaseVectorStorage):
 
     def _create_client(
         self,
-        url_and_api_key: Optional[Tuple[str, str]],
-        path: Optional[str],
+        url_and_api_key: tuple[str, str] | None,
+        path: str | None,
         **kwargs: Any,
     ) -> None:
         from qdrant_client import QdrantClient
@@ -226,16 +226,16 @@ class QdrantStorage(BaseVectorStorage):
 
     def _generate_collection_name(self) -> str:
         r"""Generates a collection name if user doesn't provide"""
-        return datetime.now().isoformat()
+        return datetime.now(timezone.utc).isoformat()
 
-    def _get_collection_info(self, collection_name: str) -> Dict[str, Any]:
+    def _get_collection_info(self, collection_name: str) -> dict[str, Any]:
         r"""Retrieves details of an existing collection.
 
         Args:
             collection_name (str): Name of the collection to be checked.
 
         Returns:
-            Dict[str, Any]: A dictionary containing details about the
+            dict[str, Any]: A dictionary containing details about the
                 collection.
         """
         from qdrant_client.http.models import VectorParams
@@ -251,7 +251,7 @@ class QdrantStorage(BaseVectorStorage):
             else None,
             "vector_count": collection_info.points_count,
             "status": collection_info.status,
-            "vectors_count": collection_info.vectors_count,
+            "vectors_count": getattr(collection_info, "vectors_count", None),
             "config": collection_info.config,
         }
 
@@ -261,13 +261,13 @@ class QdrantStorage(BaseVectorStorage):
 
     def add(
         self,
-        records: List[VectorRecord],
+        records: list[VectorRecord],
         **kwargs,
     ) -> None:
         r"""Adds a list of vectors to the specified collection.
 
         Args:
-            vectors (List[VectorRecord]): List of vectors to be added.
+            vectors (list[VectorRecord]): List of vectors to be added.
             **kwargs (Any): Additional keyword arguments.
 
         Raises:
@@ -289,14 +289,14 @@ class QdrantStorage(BaseVectorStorage):
             )
 
     def update_payload(
-        self, ids: List[str], payload: Dict[str, Any], **kwargs: Any
+        self, ids: list[str], payload: dict[str, Any], **kwargs: Any
     ) -> None:
         r"""Updates the payload of the vectors identified by their IDs.
 
         Args:
-            ids (List[str]): List of unique identifiers for the vectors to be
+            ids (list[str]): List of unique identifiers for the vectors to be
                 updated.
-            payload (Dict[str, Any]): List of payloads to be updated.
+            payload (dict[str, Any]): List of payloads to be updated.
             **kwargs (Any): Additional keyword arguments.
 
         Raises:
@@ -304,7 +304,7 @@ class QdrantStorage(BaseVectorStorage):
         """
         from qdrant_client.http.models import PointIdsList, UpdateStatus
 
-        points = cast(List[Union[str, int]], ids)
+        points = cast(list[str | int], ids)
 
         op_info = self._client.set_payload(
             collection_name=self.collection_name,
@@ -324,17 +324,17 @@ class QdrantStorage(BaseVectorStorage):
 
     def delete(
         self,
-        ids: Optional[List[str]] = None,
-        payload_filter: Optional[Dict[str, Any]] = None,
+        ids: list[str] = None,
+        payload_filter: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         r"""Deletes points from the collection based on either IDs or payload
         filters.
 
         Args:
-            ids (Optional[List[str]], optional): List of unique identifiers
+            ids (Optional[list[str]], optional): List of unique identifiers
                 for the vectors to be deleted.
-            payload_filter (Optional[Dict[str, Any]], optional): A filter for
+            payload_filter (dict[str, Any] | None, optional): A filter for
                 the payload to delete points matching specific conditions. If
                 `ids` is provided, `payload_filter` will be ignored unless both
                 are combined explicitly.
@@ -376,7 +376,7 @@ class QdrantStorage(BaseVectorStorage):
             op_info = self._client.delete(
                 collection_name=self.collection_name,
                 points_selector=PointIdsList(
-                    points=cast(List[Union[int, str]], ids)
+                    points=cast(list[int | str], ids)
                 ),
                 **kwargs,
             )
@@ -395,7 +395,7 @@ class QdrantStorage(BaseVectorStorage):
             op_info = self._client.delete(
                 collection_name=self.collection_name,
                 points_selector=Filter(
-                    must=cast(List[Condition], filter_conditions)
+                    must=cast(list[Condition], filter_conditions)
                 ),
                 **kwargs,
             )
@@ -416,21 +416,21 @@ class QdrantStorage(BaseVectorStorage):
     def query(
         self,
         query: VectorDBQuery,
-        filter_conditions: Optional[Dict[str, Any]] = None,
+        filter_conditions: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> List[VectorDBQueryResult]:
+    ) -> list[VectorDBQueryResult]:
         r"""Searches for similar vectors in the storage based on the provided
         query.
 
         Args:
             query (VectorDBQuery): The query object containing the search
                 vector and the number of top similar vectors to retrieve.
-            filter_conditions (Optional[Dict[str, Any]], optional): A
+            filter_conditions (dict[str, Any] | None, optional): A
                 dictionary specifying conditions to filter the query results.
             **kwargs (Any): Additional keyword arguments.
 
         Returns:
-            List[VectorDBQueryResult]: A list of vectors retrieved from the
+            list[VectorDBQueryResult]: A list of vectors retrieved from the
                 storage based on similarity to the query vector.
         """
         from qdrant_client.http.models import (
@@ -447,7 +447,7 @@ class QdrantStorage(BaseVectorStorage):
                 FieldCondition(key=key, match=MatchValue(value=value))
                 for key, value in filter_conditions.items()
             ]
-            search_filter = Filter(must=cast(List[Condition], must_conditions))
+            search_filter = Filter(must=cast(list[Condition], must_conditions))
 
         # Execute the search with optional filter
         search_result = self._client.query_points(
@@ -483,7 +483,6 @@ class QdrantStorage(BaseVectorStorage):
 
     def load(self) -> None:
         r"""Load the collection hosted on cloud service."""
-        pass
 
     @property
     def client(self) -> "QdrantClient":

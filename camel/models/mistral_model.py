@@ -12,7 +12,7 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -63,20 +63,20 @@ class MistralModel(BaseModelBackend):
     r"""Mistral API in a unified BaseModelBackend interface.
 
     Args:
-        model_type (Union[ModelType, str]): Model for which a backend is
+        model_type (ModelType | str): Model for which a backend is
             created, one of MISTRAL_* series.
-        model_config_dict (Optional[Dict[str, Any]], optional): A dictionary
+        model_config_dict (dict[str, Any] | None, optional): A dictionary
             that will be fed into:obj:`Mistral.chat.complete()`.
             If:obj:`None`, :obj:`MistralConfig().as_dict()` will be used.
             (default: :obj:`None`)
-        api_key (Optional[str], optional): The API key for authenticating with
+        api_key (str | None, optional): The API key for authenticating with
             the mistral service. (default: :obj:`None`)
-        url (Optional[str], optional): The url to the mistral service.
+        url (str | None, optional): The url to the mistral service.
             (default: :obj:`None`)
-        token_counter (Optional[BaseTokenCounter], optional): Token counter to
+        token_counter (BaseTokenCounter | None, optional): Token counter to
             use for the model. If not provided, :obj:`OpenAITokenCounter` will
             be used. (default: :obj:`None`)
-        timeout (Optional[float], optional): The timeout value in seconds for
+        timeout (float | None, optional): The timeout value in seconds for
             API calls. If not provided, will fall back to the MODEL_TIMEOUT
             environment variable or default to 180 seconds.
             (default: :obj:`None`)
@@ -94,12 +94,12 @@ class MistralModel(BaseModelBackend):
     @dependencies_required('mistralai')
     def __init__(
         self,
-        model_type: Union[ModelType, str],
-        model_config_dict: Optional[Dict[str, Any]] = None,
-        api_key: Optional[str] = None,
-        url: Optional[str] = None,
-        token_counter: Optional[BaseTokenCounter] = None,
-        timeout: Optional[float] = None,
+        model_type: ModelType | str,
+        model_config_dict: dict[str, Any] | None = None,
+        api_key: str | None = None,
+        url: str | None = None,
+        token_counter: BaseTokenCounter | None = None,
+        timeout: float | None = None,
         max_retries: int = 3,
         **kwargs: Any,
     ) -> None:
@@ -110,7 +110,7 @@ class MistralModel(BaseModelBackend):
 
         api_key = api_key or os.environ.get("MISTRAL_API_KEY")
         url = url or os.environ.get("MISTRAL_API_BASE_URL")
-        timeout = timeout or float(os.environ.get("MODEL_TIMEOUT", 180))
+        timeout = timeout or float(os.environ.get("MODEL_TIMEOUT", "180"))
         super().__init__(
             model_type,
             model_config_dict,
@@ -176,8 +176,8 @@ class MistralModel(BaseModelBackend):
 
     def _to_mistral_chatmessage(
         self,
-        messages: List[OpenAIMessage],
-    ) -> List["Messages"]:
+        messages: list[OpenAIMessage],
+    ) -> list["Messages"]:
         import uuid
 
         from mistralai.models import (
@@ -260,10 +260,10 @@ class MistralModel(BaseModelBackend):
     @observe(as_type="generation")
     async def _arun(
         self,
-        messages: List[OpenAIMessage],
-        response_format: Optional[Type[BaseModel]] = None,
-        tools: Optional[List[Dict[str, Any]]] = None,
-    ) -> Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]:
+        messages: list[OpenAIMessage],
+        response_format: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
         logger.warning(
             "Mistral does not support async inference, using sync "
             "inference instead."
@@ -327,18 +327,18 @@ class MistralModel(BaseModelBackend):
     @observe(as_type="generation")
     def _run(
         self,
-        messages: List[OpenAIMessage],
-        response_format: Optional[Type[BaseModel]] = None,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        messages: list[OpenAIMessage],
+        response_format: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> ChatCompletion:
         r"""Runs inference of Mistral chat completion.
 
         Args:
-            messages (List[OpenAIMessage]): Message list with the chat history
+            messages (list[OpenAIMessage]): Message list with the chat history
                 in OpenAI API format.
-            response_format (Optional[Type[BaseModel]]): The format of the
+            response_format (type[BaseModel] | None): The format of the
                 response for this query.
-            tools (Optional[List[Dict[str, Any]]]): The tools to use for this
+            tools (list[dict[str, Any]] | None): The tools to use for this
                 query.
 
         Returns:
@@ -401,10 +401,10 @@ class MistralModel(BaseModelBackend):
 
     def _prepare_request(
         self,
-        messages: List[OpenAIMessage],
-        response_format: Optional[Type[BaseModel]] = None,
-        tools: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        messages: list[OpenAIMessage],
+        response_format: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         request_config = self.model_config_dict.copy()
         if tools:
             request_config["tools"] = tools

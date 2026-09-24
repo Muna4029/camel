@@ -14,7 +14,7 @@
 import math
 import random
 import re
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
+from typing import Any, ClassVar, Literal, cast
 
 from camel.environments.models import Action, Observation
 from camel.environments.multi_step import MultiStepEnv
@@ -24,7 +24,7 @@ from camel.extractors import BaseExtractor, BaseExtractorStrategy
 class MoveExtractor(BaseExtractorStrategy):
     r"""A strategy for extracting Tic Tac Toe actions from text."""
 
-    async def extract(self, text: str) -> Optional[str]:
+    async def extract(self, text: str) -> str | None:
         r"""Extract a valid Tic Tac Toe move from text.
 
         Looks for a pattern '<Action> n' where n is a digit between 1 and 9.
@@ -33,7 +33,7 @@ class MoveExtractor(BaseExtractorStrategy):
             text (str): The text to extract the action from.
 
         Returns:
-            Optional[str]: The extracted move as a string, or None if no valid
+            str | None: The extracted move as a string, or None if no valid
                 move is found.
         """
         match = re.search(r"<Action>\s*(\d+)", text)
@@ -64,14 +64,14 @@ class Opponent:
         """
         self.play_style = play_style
 
-    def select_move(self, board: List[str]) -> Optional[int]:
+    def select_move(self, board: list[str]) -> int | None:
         r"""Select a move based on the opponent's play style.
 
         Args:
-            board (List[str]): The current game board as a list of strings.
+            board (list[str]): The current game board as a list of strings.
 
         Returns:
-            Optional[int]: The index of the selected move, or None if no move
+            int | None: The index of the selected move, or None if no move
                 is available.
         """
         if self.play_style == "optimal":
@@ -82,14 +82,14 @@ class Opponent:
                 return None  # Consistent with optimal strategy
             return random.choice(moves)
 
-    def get_optimal_move(self, board: List[str]) -> Optional[int]:
+    def get_optimal_move(self, board: list[str]) -> int | None:
         r"""Get the optimal move using the minimax algorithm.
 
         Args:
-            board (List[str]): The current game board as a list of strings.
+            board (list[str]): The current game board as a list of strings.
 
         Returns:
-            Optional[int]: The index of the optimal move, or None if no move
+            int | None: The index of the optimal move, or None if no move
                 is available.
         """
         _, move = self.minimax(board, is_maximizing=True)
@@ -97,12 +97,12 @@ class Opponent:
 
     def minimax(
         self,
-        board: List[str],
+        board: list[str],
         is_maximizing: bool,
         depth: int = 0,
         alpha: float = -math.inf,
         beta: float = math.inf,
-    ) -> Tuple[float, Optional[int]]:
+    ) -> tuple[float, int | None]:
         r"""Minimax algorithm with alpha-beta pruning for optimal move
         selection.
 
@@ -110,7 +110,7 @@ class Opponent:
         Uses alpha-beta pruning to reduce the search space.
 
         Args:
-            board (List[str]): The current game board as a list of strings.
+            board (list[str]): The current game board as a list of strings.
             is_maximizing (bool): True if maximizing player (O), False if
                 minimizing (X).
             depth (int): Current depth in the search tree. (default: :obj:`0`)
@@ -118,10 +118,10 @@ class Opponent:
             beta (float): Beta value for pruning. (default: :obj:`math.inf`)
 
         Returns:
-            Tuple[float, Optional[int]]: A tuple containing:
+            Tuple[float, int | None]: A tuple containing:
                 - float: The score of the best move (1 for O win, -1 for X
                     win, 0 for draw)
-                - Optional[int]: The index of the best move, or None if
+                - int | None: The index of the best move, or None if
                     terminal state
         """
         winner = TicTacToeEnv.check_winner(board)
@@ -203,18 +203,18 @@ class TicTacToeEnv(MultiStepEnv):
 
     def __init__(
         self,
-        extractor: Optional[BaseExtractor] = None,
-        max_steps: Optional[int] = None,
+        extractor: BaseExtractor | None = None,
+        max_steps: int | None = None,
         play_style: Literal["optimal", "random"] = "optimal",
         **kwargs,
     ) -> None:
         r"""Initialize the Tic Tac Toe environment.
 
         Args:
-            extractor (Optional[BaseExtractor]): Extractor to process LLM
+            extractor (BaseExtractor | None): Extractor to process LLM
                 responses. If None, a default extractor with
                 MoveExtractor will be used. (default: :obj:`None`)
-            max_steps (Optional[int]): Maximum steps per episode.
+            max_steps (int | None): Maximum steps per episode.
                 (default: :obj:`None`)
             play_style (Literal["optimal", "random"]): The strategy for the
                 opponent to use, either "optimal" or "random". (default:
@@ -226,11 +226,11 @@ class TicTacToeEnv(MultiStepEnv):
         super().__init__(extractor, max_steps, **kwargs)
         self.opponent = Opponent(play_style=play_style)
 
-    def _get_initial_state(self) -> Dict[str, Any]:
+    def _get_initial_state(self) -> dict[str, Any]:
         r"""Get the initial state of the environment.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the initial state with an
+            dict[str, Any]: A dictionary containing the initial state with an
                 empty board, game status flags, and move history.
         """
         # State includes the board (9 cells), game_over flag, and winner info.
@@ -374,11 +374,11 @@ class TicTacToeEnv(MultiStepEnv):
 
         return Observation(question=obs, context={}, metadata={})
 
-    async def compute_reward(self) -> Tuple[float, Dict[str, float]]:
+    async def compute_reward(self) -> tuple[float, dict[str, float]]:
         r"""Compute the reward for the current state.
 
         Returns:
-            Tuple[float, Dict[str, float]]: A tuple containing the total
+            tuple[float, dict[str, float]]: A tuple containing the total
                 reward and a dictionary of reward components:
                 - 1.0 for a win
                 - 0.0 for a loss or illegal move
@@ -404,14 +404,14 @@ class TicTacToeEnv(MultiStepEnv):
 
     @staticmethod
     def evaluate_position_for_x(
-        board: List[str], is_x_turn: bool, depth: int = 0, max_depth: int = 10
+        board: list[str], is_x_turn: bool, depth: int = 0, max_depth: int = 10
     ) -> float:
         r"""Evaluate the current board position from X's perspective.
 
         Uses minimax to determine the value of the position.
 
         Args:
-            board (List[str]): The current game board as a list of strings.
+            board (list[str]): The current game board as a list of strings.
             is_x_turn (bool): True if it's X's turn to move, False otherwise.
 
         Returns:
@@ -456,44 +456,44 @@ class TicTacToeEnv(MultiStepEnv):
         return self._state["game_over"]
 
     @staticmethod
-    def available_moves(board: List[str]) -> List[int]:
+    def available_moves(board: list[str]) -> list[int]:
         r"""Get all available moves on the board.
 
         Args:
-            board (List[str]): The current game board as a list of strings.
+            board (list[str]): The current game board as a list of strings.
 
         Returns:
-            List[int]: A list of indices representing empty cells on the board.
+            list[int]: A list of indices representing empty cells on the board.
         """
         # Return list of indices that are free.
         return [i for i, cell in enumerate(board) if cell == " "]
 
     @staticmethod
-    def check_winner(board: List[str]) -> Optional[Literal["X", "O", "draw"]]:
+    def check_winner(board: list[str]) -> Literal["X", "O", "draw"] | None:
         r"""Check if there is a winner or a draw on the board.
 
         Args:
-            board (List[str]): The current game board as a list of strings.
+            board (list[str]): The current game board as a list of strings.
 
         Returns:
-            Optional[Literal["X", "O", "draw"]]: "X" if X has won, "O" if O
+            Literal["X", "O", "draw"] | None: "X" if X has won, "O" if O
                 has won, "draw" if the game is a draw, or None if the game is
                 still ongoing.
         """
         # Check all win combinations.
         for a, b, c in TicTacToeEnv.WIN_COMBINATIONS:
             if board[a] != " " and board[a] == board[b] == board[c]:
-                return board[a]
+                return cast(Literal["X", "O", "draw"], board[a])
         # Check for draw.
         if all(cell != " " for cell in board):
             return "draw"
         return None
 
-    def render_board(self, board: List[str]) -> str:
+    def render_board(self, board: list[str]) -> str:
         r"""Render the board as a string for display.
 
         Args:
-            board (List[str]): The current game board as a list of strings.
+            board (list[str]): The current game board as a list of strings.
 
         Returns:
             str: A formatted string representation of the board.

@@ -11,7 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
-from typing import Any, Collection, Dict, List, Optional, Sequence, Union
+from collections.abc import Collection, Sequence
+from typing import Any
 
 from camel.embeddings import BaseEmbedding
 from camel.retrievers import BaseRetriever, BM25Retriever, VectorRetriever
@@ -21,16 +22,16 @@ from camel.storages import BaseVectorStorage
 class HybridRetriever(BaseRetriever):
     def __init__(
         self,
-        embedding_model: Optional[BaseEmbedding] = None,
-        vector_storage: Optional[BaseVectorStorage] = None,
+        embedding_model: BaseEmbedding | None = None,
+        vector_storage: BaseVectorStorage | None = None,
     ) -> None:
         r"""Initializes the HybridRetriever with optional embedding model and
         vector storage.
 
         Args:
-            embedding_model (Optional[BaseEmbedding]): An optional embedding
+            embedding_model (BaseEmbedding | None): An optional embedding
                 model used by the VectorRetriever. Defaults to None.
-            vector_storage (Optional[BaseVectorStorage]): An optional vector
+            vector_storage (BaseVectorStorage | None): An optional vector
                 storage used by the VectorRetriever. Defaults to None.
         """
         self.vr = VectorRetriever(embedding_model, vector_storage)
@@ -56,13 +57,13 @@ class HybridRetriever(BaseRetriever):
 
     def _sort_rrf_scores(
         self,
-        vector_retriever_results: List[Dict[str, Any]],
-        bm25_retriever_results: List[Dict[str, Any]],
+        vector_retriever_results: list[dict[str, Any]],
+        bm25_retriever_results: list[dict[str, Any]],
         top_k: int,
         vector_weight: float,
         bm25_weight: float,
         rank_smoothing_factor: float,
-    ) -> List[Dict[str, Union[str, float]]]:
+    ) -> list[dict[str, str | float]]:
         r"""Sorts and combines results from vector and BM25 retrievers using
         Reciprocal Rank Fusion (RRF).
 
@@ -83,7 +84,7 @@ class HybridRetriever(BaseRetriever):
                 that helps smooth the rank positions.
 
         Returns:
-            List[Dict[str, Union[str, float]]]: A list of dictionaries
+            list[dict[str, str | float]]: A list of dictionaries
             representing the sorted results. Each dictionary contains the
             'text'from the retrieved items and their corresponding 'rrf_score'.
 
@@ -161,10 +162,10 @@ class HybridRetriever(BaseRetriever):
         vector_retriever_similarity_threshold: float = 0.5,
         bm25_retriever_top_k: int = 50,
         return_detailed_info: bool = False,
-    ) -> Union[
-        dict[str, Sequence[Collection[str]]],
-        dict[str, Sequence[Union[str, float]]],
-    ]:
+    ) -> (
+        dict[str, Sequence[Collection[str]]]
+        | dict[str, Sequence[str | float]]
+    ):
         r"""Executes a hybrid retrieval query using both vector and BM25
         retrievers.
 
@@ -199,7 +200,7 @@ class HybridRetriever(BaseRetriever):
                 "Neither `vector_weight` nor `bm25_weight` can be negative."
             )
 
-        vr_raw_results: List[Dict[str, Any]] = self.vr.query(
+        vr_raw_results: list[dict[str, Any]] = self.vr.query(
             query=query,
             top_k=vector_retriever_top_k,
             similarity_threshold=vector_retriever_similarity_threshold,
