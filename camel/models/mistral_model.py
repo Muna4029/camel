@@ -12,7 +12,7 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -90,12 +90,12 @@ class MistralModel(BaseModelBackend):
     @dependencies_required('mistralai')
     def __init__(
         self,
-        model_type: Union[ModelType, str],
-        model_config_dict: Optional[Dict[str, Any]] = None,
-        api_key: Optional[str] = None,
-        url: Optional[str] = None,
-        token_counter: Optional[BaseTokenCounter] = None,
-        timeout: Optional[float] = None,
+        model_type: ModelType | str,
+        model_config_dict: dict[str, Any] | None = None,
+        api_key: str | None = None,
+        url: str | None = None,
+        token_counter: BaseTokenCounter | None = None,
+        timeout: float | None = None,
     ) -> None:
         from mistralai import Mistral
 
@@ -137,14 +137,19 @@ class MistralModel(BaseModelBackend):
                 for tool_call in response.choices[0].message.tool_calls
             ]
 
+        # Get message attributes with proper None handling
+        message = response.choices[0].message
+        message_role = getattr(message, "role", None) if message else None
+        message_content = getattr(message, "content", None) if message else None
+
         obj = ChatCompletion.construct(
             id=response.id,
             choices=[
                 dict(
                     index=response.choices[0].index,  # type: ignore[index]
                     message={
-                        "role": response.choices[0].message.role,  # type: ignore[index,union-attr]
-                        "content": response.choices[0].message.content,  # type: ignore[index,union-attr]
+                        "role": message_role,
+                        "content": message_content,
                         "tool_calls": tool_calls,
                     },
                     finish_reason=response.choices[0].finish_reason  # type: ignore[index]
@@ -162,8 +167,8 @@ class MistralModel(BaseModelBackend):
 
     def _to_mistral_chatmessage(
         self,
-        messages: List[OpenAIMessage],
-    ) -> List["Messages"]:
+        messages: list[OpenAIMessage],
+    ) -> list["Messages"]:
         import uuid
 
         from mistralai.models import (
@@ -246,10 +251,10 @@ class MistralModel(BaseModelBackend):
     @observe(as_type="generation")
     async def _arun(
         self,
-        messages: List[OpenAIMessage],
-        response_format: Optional[Type[BaseModel]] = None,
-        tools: Optional[List[Dict[str, Any]]] = None,
-    ) -> Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]:
+        messages: list[OpenAIMessage],
+        response_format: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
         logger.warning(
             "Mistral does not support async inference, using sync "
             "inference instead."
@@ -313,9 +318,9 @@ class MistralModel(BaseModelBackend):
     @observe(as_type="generation")
     def _run(
         self,
-        messages: List[OpenAIMessage],
-        response_format: Optional[Type[BaseModel]] = None,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        messages: list[OpenAIMessage],
+        response_format: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> ChatCompletion:
         r"""Runs inference of Mistral chat completion.
 
@@ -387,10 +392,10 @@ class MistralModel(BaseModelBackend):
 
     def _prepare_request(
         self,
-        messages: List[OpenAIMessage],
-        response_format: Optional[Type[BaseModel]] = None,
-        tools: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        messages: list[OpenAIMessage],
+        response_format: type[BaseModel] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         request_config = self.model_config_dict.copy()
         if tools:
             request_config["tools"] = tools

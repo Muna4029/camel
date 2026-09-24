@@ -108,7 +108,7 @@ if user_input := st.chat_input("Ask a question about the repo…"):
         prompt = f"{question}\nRepository: {st.session_state['repo_url']}"
         response = await agent.astep(prompt)
         await toolkit.disconnect()
-        return response.msgs[0].content
+        return response.msgs[0].content or ""
 
     # Run the agent
     with st.spinner("Thinking…"):
