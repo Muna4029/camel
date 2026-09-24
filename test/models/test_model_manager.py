@@ -42,11 +42,9 @@ def test_model_manager(
     calls_count: int,
     times_each_model_called: int,
 ):
-    models = (
-        [Mock(run=Mock()) for _ in range(models_number)]
-        if models_number > 1
-        else Mock()
-    )
+    models: List[BaseModelBackend] = [
+        Mock(run=Mock()) for _ in range(models_number)
+    ]
 
     if TYPE_CHECKING:
         assert type(models) is List[BaseModelBackend]
