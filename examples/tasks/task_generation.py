@@ -12,7 +12,6 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-from camel.agents import ChatAgent
 from camel.configs import ChatGPTConfig
 from camel.models import ModelFactory
 from camel.tasks import (
@@ -23,6 +22,9 @@ from camel.types import (
     ModelPlatformType,
     ModelType,
 )
+
+# Commented out the import to avoid circular dependency
+# from camel.agents import ChatAgent
 
 # set up LLM model
 assistant_model_config = ChatGPTConfig(
