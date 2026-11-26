@@ -12,7 +12,17 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-from camel.toolkits import RedditToolkit
+try:
+    from camel.toolkits import RedditToolkit
+except Exception:  # optional dependency may be missing in some environments
+
+    class RedditToolkit:
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "Optional dependency 'camel.toolkits.RedditToolkit' is unavailable. "
+                "Install the 'camel-ai' package to use RedditToolkit."
+            )
+
 
 reddit_toolkit = RedditToolkit()
 

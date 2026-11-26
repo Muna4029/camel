@@ -324,8 +324,6 @@ def api_keys_required(
                 key_way = "https://portal.azure.com/"
             elif env_var_name == 'OPENAI_API_KEY':
                 key_way = "https://platform.openai.com/docs/overview"
-            elif env_var_name == 'FISHAUDIO_API_KEY':
-                key_way = "https://fish.audio/"
             elif env_var_name == 'GEMINI_API_KEY':
                 key_way = "https://gemini.google.com/"
             elif env_var_name == 'INTERNLM_API_KEY':
