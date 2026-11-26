@@ -46,40 +46,41 @@ agent = ChatAgent(
     tools=tools,
 )
 
-# Example 1: Web Search
-print("\n=== Using Web Search with Agent ===")
-response = agent.step(
-    "What was a positive news story from today? Use web search to find out."
-)
-print("Web Search Response:", response.msg.content)
-
-# Example 2: Direct Web Search
-print("\n=== Direct Web Search Usage ===")
-web_result = toolkit.web_search(
-    "What are the latest developments in renewable energy?"
-)
-print("Direct Web Search Result:", web_result)
-
-# Example 3: File Search (if configured)
-vector_store_id = os.getenv("OPENAI_VECTOR_STORE_ID")
-
-if vector_store_id:
-    print("\n=== Using File Search with Agent ===")
+if __name__ == "__main__":
+    # Example 1: Web Search
+    print("\n=== Using Web Search with Agent ===")
     response = agent.step(
-        f"Search through my documents for information about climate change. "
-        f"Use file search with vector store ID: {vector_store_id}"
+        "What was a positive news story from today? Use web search to find out."
     )
-    print("File Search Response:", response.msg.content)
+    print("Web Search Response:", response.msg.content)
 
-    print("\n=== Direct File Search Usage ===")
-    file_result = toolkit.file_search(
-        query="What are the key points about climate change?",
-        vector_store_id=vector_store_id,
+    # Example 2: Direct Web Search
+    print("\n=== Direct Web Search Usage ===")
+    web_result = toolkit.web_search(
+        "What are the latest developments in renewable energy?"
     )
-    print("Direct File Search Result:", file_result)
-else:
-    print("\n=== File Search Examples Skipped ===")
-    print("Set OPENAI_VECTOR_STORE_ID env var to run file search examples")
+    print("Direct Web Search Result:", web_result)
+
+    # Example 3: File Search (if configured)
+    vector_store_id = os.getenv("OPENAI_VECTOR_STORE_ID")
+
+    if vector_store_id:
+        print("\n=== Using File Search with Agent ===")
+        response = agent.step(
+            f"Search through my documents for information about climate change. "
+            f"Use file search with vector store ID: {vector_store_id}"
+        )
+        print("File Search Response:", response.msg.content)
+
+        print("\n=== Direct File Search Usage ===")
+        file_result = toolkit.file_search(
+            query="What are the key points about climate change?",
+            vector_store_id=vector_store_id,
+        )
+        print("Direct File Search Result:", file_result)
+    else:
+        print("\n=== File Search Examples Skipped ===")
+        print("Set OPENAI_VECTOR_STORE_ID env var to run file search examples")
 
 
 """

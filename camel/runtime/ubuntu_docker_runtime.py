@@ -288,7 +288,7 @@ class UbuntuDockerRuntime(DockerRuntime):
         logger.info(f"Executing Python file with command: {cmd}")
 
         # Always use streaming output
-        exec_result = self.container.exec_run(
+        exec_stream = self.container.exec_run(
             cmd,
             environment=execution_env,
             stream=True,
@@ -297,16 +297,23 @@ class UbuntuDockerRuntime(DockerRuntime):
 
         # Handle output streams
         try:
-            for stdout, stderr in exec_result[1]:
+            # exec_run with stream=True returns an iterator/generator of chunks.
+            for chunk in exec_stream:
+                # When demux=True, each chunk is a (stdout, stderr) tuple; otherwise it's bytes
+                if isinstance(chunk, tuple):
+                    stdout, stderr = chunk
+                else:
+                    stdout, stderr = chunk, None
+
                 if stdout:
-                    output = stdout.decode('utf-8')
+                    output = stdout.decode('utf-8', errors='replace')
                     if callback:
                         callback(output)
                     else:
                         print(output, end='')
 
                 if stderr:
-                    error = stderr.decode('utf-8')
+                    error = stderr.decode('utf-8', errors='replace')
                     if callback:
                         callback(f"ERROR: {error}")
                     else:

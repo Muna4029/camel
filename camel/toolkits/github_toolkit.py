@@ -18,7 +18,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 from camel.toolkits import FunctionTool
 from camel.toolkits.base import BaseToolkit
-from camel.utils import MCPServer, dependencies_required
+from camel.utils import MCPServer
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,6 @@ class GithubToolkit(BaseToolkit):
             `get_github_access_token` method.
     """
 
-    @dependencies_required('github')
     def __init__(
         self,
         repo_name: str,
@@ -54,8 +53,15 @@ class GithubToolkit(BaseToolkit):
                 `get_github_access_token` method.
         """
         super().__init__(timeout=timeout)
-        from github.Auth import Token
-        from github.MainClass import Github
+        try:
+            from github.Auth import Token
+            from github.MainClass import Github
+        except Exception as e:
+            raise RuntimeError(
+                "Optional dependency 'PyGithub' is required for GithubToolkit. "
+                "Install the appropriate extras (e.g. 'pip install .[github]') "
+                "or install PyGithub directly: 'pip install PyGithub'."
+            ) from e
 
         if access_token is None:
             access_token = self.get_github_access_token()
@@ -144,7 +150,7 @@ class GithubToolkit(BaseToolkit):
             )
 
             if pr is not None:
-                return f"Title: {pr.title}\n" f"Body: {pr.body}\n"
+                return f"Title: {pr.title}\nBody: {pr.body}\n"
             else:
                 return "Failed to create pull request."
         else:
