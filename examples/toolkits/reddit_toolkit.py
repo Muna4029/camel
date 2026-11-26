@@ -12,7 +12,28 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-from camel.toolkits import RedditToolkit
+try:
+    from camel.toolkits import RedditToolkit  # type: ignore
+except Exception:
+    # Fallback stub to avoid importing the optional heavy 'camel' dependency at import time.
+    # This allows the module to be imported in environments where 'camel' is not installable.
+    class RedditToolkit:
+        """Lightweight stub for RedditToolkit used when the real 'camel' package isn't available.
+
+        Instantiation succeeds so module-level creation of a RedditToolkit object does not
+        fail during import. Any attempt to use toolkit functionality will raise a clear
+        error explaining the missing dependency.
+        """
+
+        def __init__(self, *args, **kwargs):
+            self._available = False
+
+        def __getattr__(self, name):
+            raise RuntimeError(
+                "Optional dependency 'camel' is not installed; RedditToolkit functionality is unavailable. "
+                "Install the 'camel' package to enable full functionality."
+            )
+
 
 reddit_toolkit = RedditToolkit()
 
