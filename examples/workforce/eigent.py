@@ -20,31 +20,69 @@ from camel.messages.base import BaseMessage
 from camel.models import BaseModelBackend, ModelFactory
 from camel.societies.workforce import Workforce
 from camel.tasks.task import Task
-from camel.toolkits import (
-    AudioAnalysisToolkit,
-    CodeExecutionToolkit,
-    Crawl4AIToolkit,
-    EdgeOnePagesMCPToolkit,
-    ExcelToolkit,
-    FileWriteToolkit,
-    # GoogleDriveMCPToolkit,
-    HumanToolkit,
-    HybridBrowserToolkit,
-    ImageAnalysisToolkit,
-    LinkedInToolkit,
-    MarkItDownToolkit,
-    NoteTakingToolkit,
-    NotionToolkit,
-    OpenAIImageToolkit,
-    PPTXToolkit,
-    RedditToolkit,
-    SearchToolkit,
-    SlackToolkit,
-    TerminalToolkit,
-    TwitterToolkit,
-    VideoDownloaderToolkit,
-    WhatsAppToolkit,
-)
+
+
+# Lazy-import proxies for optional toolkits to avoid forcing installation of
+# all optional extras (e.g., camel[all]) at import/installation time.
+# These proxies attempt to load the real toolkit class on first use and raise
+# a clear error if the optional dependency is not available.
+class _LazyToolkitProxy:
+    def __init__(self, name):
+        self._name = name
+        self._obj = None
+
+    def _load(self):
+        if self._obj is None:
+            try:
+                module = __import__("camel.toolkits", fromlist=[self._name])
+                self._obj = getattr(module, self._name)
+            except Exception:
+                # Keep _obj as None when the optional toolkit or its deps are missing
+                self._obj = None
+        return self._obj
+
+    def __call__(self, *args, **kwargs):
+        obj = self._load()
+        if obj is None:
+            raise ImportError(
+                f"Optional toolkit '{self._name}' is unavailable in this environment"
+            )
+        return obj(*args, **kwargs)
+
+    def __getattr__(self, item):
+        obj = self._load()
+        if obj is None:
+            raise AttributeError(
+                f"Optional toolkit '{self._name}' is unavailable in this environment"
+            )
+        return getattr(obj, item)
+
+
+# Define lazy proxies for optional toolkits (original names preserved)
+AudioAnalysisToolkit = _LazyToolkitProxy('AudioAnalysisToolkit')
+CodeExecutionToolkit = _LazyToolkitProxy('CodeExecutionToolkit')
+Crawl4AIToolkit = _LazyToolkitProxy('Crawl4AIToolkit')
+EdgeOnePagesMCPToolkit = _LazyToolkitProxy('EdgeOnePagesMCPToolkit')
+ExcelToolkit = _LazyToolkitProxy('ExcelToolkit')
+FileWriteToolkit = _LazyToolkitProxy('FileWriteToolkit')
+# GoogleDriveMCPToolkit  # commented out in original
+HumanToolkit = _LazyToolkitProxy('HumanToolkit')
+HybridBrowserToolkit = _LazyToolkitProxy('HybridBrowserToolkit')
+ImageAnalysisToolkit = _LazyToolkitProxy('ImageAnalysisToolkit')
+LinkedInToolkit = _LazyToolkitProxy('LinkedInToolkit')
+MarkItDownToolkit = _LazyToolkitProxy('MarkItDownToolkit')
+NoteTakingToolkit = _LazyToolkitProxy('NoteTakingToolkit')
+NotionToolkit = _LazyToolkitProxy('NotionToolkit')
+OpenAIImageToolkit = _LazyToolkitProxy('OpenAIImageToolkit')
+PPTXToolkit = _LazyToolkitProxy('PPTXToolkit')
+RedditToolkit = _LazyToolkitProxy('RedditToolkit')
+SearchToolkit = _LazyToolkitProxy('SearchToolkit')
+SlackToolkit = _LazyToolkitProxy('SlackToolkit')
+TerminalToolkit = _LazyToolkitProxy('TerminalToolkit')
+TwitterToolkit = _LazyToolkitProxy('TwitterToolkit')
+VideoDownloaderToolkit = _LazyToolkitProxy('VideoDownloaderToolkit')
+WhatsAppToolkit = _LazyToolkitProxy('WhatsAppToolkit')
+
 from camel.types import ModelPlatformType, ModelType
 from camel.utils.commons import api_keys_required
 

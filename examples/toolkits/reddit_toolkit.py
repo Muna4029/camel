@@ -12,7 +12,24 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-from camel.toolkits import RedditToolkit
+
+class _RedditToolkitProxy:
+    def __init__(self, *args, **kwargs):
+        try:
+            from camel.toolkits import RedditToolkit as _RealRedditToolkit
+        except Exception:
+            raise RuntimeError(
+                "Optional dependency 'camel.toolkits' is not available. "
+                "To use RedditToolkit install the appropriate package (e.g. camel-ai[all])."
+            )
+        self._impl = _RealRedditToolkit(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._impl, name)
+
+
+# Expose proxy under the original name so downstream code can instantiate it.
+RedditToolkit = _RedditToolkitProxy
 
 reddit_toolkit = RedditToolkit()
 
