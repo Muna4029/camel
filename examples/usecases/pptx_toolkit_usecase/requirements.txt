@@ -1,3 +1,6 @@
 camel-ai[all]==0.2.61
 streamlit
 python-pptx
+
+[dependency-groups]
+dev = ["camel-ai[all]==0.2.61", "streamlit", "python-pptx"]

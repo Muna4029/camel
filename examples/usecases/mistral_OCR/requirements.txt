@@ -1,5 +1,16 @@
-camel-ai[all]==0.2.61
-streamlit
-pillow
-mistralai
+[project]
+dependencies = [
+  "camel-ai[all]==0.2.61",
+  "streamlit",
+  "pillow",
+  "mistralai",
+]
+
+[project.optional-dependencies]
+dev = [
+  "camel-ai[all]==0.2.61",
+  "streamlit",
+  "pillow",
+  "mistralai",
+]
 
