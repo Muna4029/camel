@@ -11,9 +11,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
-from camel.agents import ChatAgent
-from camel.prompts import PromptTemplateGenerator
-from camel.types import TaskType
+class _LazyImport:
+    def __init__(self, module, name):
+        self._module = module
+        self._name = name
+        self._obj = None
+
+    def _load(self):
+        if self._obj is None:
+            mod = __import__(self._module, fromlist=[self._name])
+            self._obj = getattr(mod, self._name)
+        return self._obj
+
+    def __call__(self, *args, **kwargs):
+        return self._load()(*args, **kwargs)
+
+    def __getattr__(self, item):
+        return getattr(self._load(), item)
+
+
+ChatAgent = _LazyImport('camel.agents', 'ChatAgent')
+PromptTemplateGenerator = _LazyImport(
+    'camel.prompts', 'PromptTemplateGenerator'
+)
+TaskType = _LazyImport('camel.types', 'TaskType')
 
 
 def main(key: str = "generate_users", num_roles: int = 50):

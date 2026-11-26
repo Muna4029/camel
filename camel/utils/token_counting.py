@@ -20,7 +20,11 @@ from io import BytesIO
 from math import ceil
 from typing import TYPE_CHECKING, List, Optional
 
-from PIL import Image
+# Pillow is an optional dependency; avoid raising ImportError at module import time
+try:
+    from PIL import Image
+except Exception:  # pragma: no cover - optional dependency may be absent in minimal installs
+    Image = None
 
 from camel.logger import get_logger
 from camel.types import (

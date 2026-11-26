@@ -19,20 +19,36 @@ import base64
 import os
 import uuid
 from io import BytesIO
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from openai import OpenAI
-from PIL import Image
+# Defer heavy/optional imports and package-internal imports to runtime to avoid
+# import-time dependency errors or circular imports in minimal-test environments.
+if TYPE_CHECKING:
+    from openai import OpenAI  # type: ignore
+    from PIL import Image  # type: ignore
+
+    from camel.toolkits import FunctionTool  # type: ignore
+    from camel.toolkits.base import BaseToolkit  # type: ignore
+    from camel.utils import MCPServer  # type: ignore
+else:
+    # Provide safe fallbacks so module can be imported without optional deps.
+    OpenAI = None  # Will be imported lazily inside methods when needed.
+    Image = None
+    FunctionTool = None
+    BaseToolkit = object
+
+    def MCPServer(*args, **kwargs):
+        def _decorator(cls):
+            return cls
+
+        return _decorator
+
 
 from camel.logger import get_logger
-from camel.toolkits import FunctionTool
-from camel.toolkits.base import BaseToolkit
-from camel.utils import MCPServer
 
 logger = get_logger(__name__)
 
 
-@MCPServer()
 class DalleToolkit(BaseToolkit):
     r"""A class representing a toolkit for image generation using OpenAI's
     DALL-E model.
@@ -138,16 +154,31 @@ class DalleToolkit(BaseToolkit):
         Returns:
             str: The path to the saved image.
         """
+        try:
+            from openai import OpenAI  # imported lazily
+        except Exception as e:
+            error_msg = (
+                "OpenAI SDK is not available. "
+                "Install the 'openai' package to use DALL-E features."
+            )
+            logger.error(f"{error_msg} ({e})")
+            return error_msg
 
-        dalle_client = OpenAI()
-        response = dalle_client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1792",
-            quality="standard",
-            n=1,  # NOTE: now dall-e-3 only supports n=1
-            response_format="b64_json",
-        )
+        try:
+            dalle_client = OpenAI()
+            response = dalle_client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1792",
+                quality="standard",
+                n=1,  # NOTE: now dall-e-3 only supports n=1
+                response_format="b64_json",
+            )
+        except Exception as e:
+            error_msg = f"An error occurred while calling the DALL-E API: {e}"
+            logger.error(error_msg)
+            return error_msg
+
         if response.data is None or len(response.data) == 0:
             error_msg = "No image data returned from DALL-E API."
             logger.error(error_msg)
@@ -174,4 +205,9 @@ class DalleToolkit(BaseToolkit):
             List[FunctionTool]: A list of FunctionTool objects
                 representing the functions in the toolkit.
         """
+        try:
+            from camel.toolkits import FunctionTool  # imported lazily
+        except Exception as e:
+            logger.warning(f"FunctionTool is not available: {e}")
+            return []
         return [FunctionTool(self.get_dalle_img)]

@@ -21,8 +21,6 @@ from pathlib import Path
 from typing import List, Optional
 from urllib.parse import urlparse
 
-from PIL import Image
-
 from camel.logger import get_logger
 from camel.toolkits.base import BaseToolkit
 from camel.toolkits.function_tool import FunctionTool

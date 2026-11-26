@@ -12,9 +12,29 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-from camel.agents import ChatAgent
-from camel.configs import ChatGPTConfig
-from camel.models import ModelFactory
+from typing import Any
+
+
+# Lazy import wrappers to avoid circular/partial-import issues at module import time.
+# These defer importing the heavy/circular components until they are actually used.
+def ChatAgent(*args: Any, **kwargs: Any):
+    from camel.agents import ChatAgent as _ChatAgent
+
+    return _ChatAgent(*args, **kwargs)
+
+
+def ChatGPTConfig(*args: Any, **kwargs: Any):
+    from camel.configs import ChatGPTConfig as _ChatGPTConfig
+
+    return _ChatGPTConfig(*args, **kwargs)
+
+
+def ModelFactory(*args: Any, **kwargs: Any):
+    from camel.models import ModelFactory as _ModelFactory
+
+    return _ModelFactory(*args, **kwargs)
+
+
 from camel.tasks import (
     Task,
     TaskManager,

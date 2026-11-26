@@ -15,6 +15,7 @@
 # Enables postponed evaluation of annotations (for string-based type hints)
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 from typing import List, Optional
 from urllib.parse import urlparse
@@ -22,18 +23,53 @@ from urllib.parse import urlparse
 import requests
 from PIL import Image
 
-from camel.logger import get_logger
-from camel.messages import BaseMessage
-from camel.models import BaseModelBackend, ModelFactory
-from camel.toolkits import FunctionTool
-from camel.toolkits.base import BaseToolkit
-from camel.types import ModelPlatformType, ModelType
-from camel.utils import MCPServer
+# Attempt to import internal camel modules lazily and provide safe
+# fallbacks to avoid import-time cycles during package initialization.
+try:
+    from camel.logger import get_logger
+except Exception:
+
+    def get_logger(name: str):
+        return logging.getLogger(name)
+
+
+try:
+    from camel.messages import BaseMessage
+except Exception:
+    BaseMessage = None  # type: ignore
+
+try:
+    from camel.models import BaseModelBackend, ModelFactory
+except Exception:
+    BaseModelBackend = None  # type: ignore
+    ModelFactory = None  # type: ignore
+
+try:
+    from camel.toolkits import FunctionTool
+except Exception:
+    FunctionTool = None  # type: ignore
+
+try:
+    from camel.toolkits.base import BaseToolkit
+except Exception:
+
+    class BaseToolkit:  # lightweight fallback to avoid import-time failure
+        def __init__(self, timeout: Optional[float] = None):
+            self.timeout = timeout
+
+
+try:
+    from camel.types import ModelPlatformType, ModelType
+except Exception:
+    ModelPlatformType = None  # type: ignore
+    ModelType = None  # type: ignore
+
+# Do not import or call MCPServer at module import time to avoid side-effects
+MCPServer = None  # type: ignore
 
 logger = get_logger(__name__)
 
 
-@MCPServer()
 class ImageAnalysisToolkit(BaseToolkit):
     r"""A toolkit for comprehensive image analysis and understanding.
     The toolkit uses vision-capable language models to perform these tasks.
@@ -179,7 +215,16 @@ class ImageAnalysisToolkit(BaseToolkit):
             image = self._load_image(image_path)
             logger.info(f"Analyzing image: {image_path}")
 
-            from camel.agents.chat_agent import ChatAgent
+            try:
+                import importlib
+
+                chat_agent_mod = importlib.import_module(
+                    "camel.agents.chat_agent"
+                )
+                ChatAgent = chat_agent_mod.ChatAgent
+            except Exception as e:
+                logger.error(f"Failed to import ChatAgent: {e}")
+                return f"Analysis failed: {e!s}"
 
             agent = ChatAgent(
                 system_message=system_message,

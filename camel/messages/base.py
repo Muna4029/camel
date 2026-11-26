@@ -20,6 +20,7 @@ import io
 import re
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -29,26 +30,44 @@ from typing import (
     Union,
 )
 
-from PIL import Image
-from pydantic import BaseModel
+# Optional external dependencies: import safely. Use TYPE_CHECKING for type-only imports
+# to avoid hard runtime dependency on optional packages and prevent import-time failures.
+if TYPE_CHECKING:
+    from PIL import Image
+    from pydantic import BaseModel
+else:
+    try:
+        from PIL import Image  # type: ignore
+    except Exception:
+        Image = None  # type: ignore
 
-from camel.messages import (
-    FunctionCallFormatter,
-    HermesFunctionFormatter,
-    OpenAIAssistantMessage,
-    OpenAIMessage,
-    OpenAISystemMessage,
-    OpenAIUserMessage,
-)
-from camel.messages.conversion import ShareGPTMessage
-from camel.prompts import CodePrompt, TextPrompt
-from camel.types import (
-    OpenAIBackendRole,
-    OpenAIImageType,
-    OpenAIVisionDetailType,
-    RoleType,
-)
-from camel.utils import Constants
+    try:
+        from pydantic import BaseModel  # type: ignore
+    except Exception:
+        # Fallback so classes that inherit from BaseModel still work when pydantic
+        # is not installed (they will inherit from object instead).
+        BaseModel = object  # type: ignore
+
+# Avoid importing package-local modules at top-level to prevent circular/partial imports
+# (these will be imported lazily where needed). For type checking only, keep imports.
+if TYPE_CHECKING:
+    from camel.messages import (
+        FunctionCallFormatter,
+        HermesFunctionFormatter,
+        OpenAIAssistantMessage,
+        OpenAIMessage,
+        OpenAISystemMessage,
+        OpenAIUserMessage,
+    )
+    from camel.messages.conversion import ShareGPTMessage
+    from camel.prompts import CodePrompt, TextPrompt
+    from camel.types import (
+        OpenAIBackendRole,
+        OpenAIImageType,
+        OpenAIVisionDetailType,
+        RoleType,
+    )
+    from camel.utils import Constants
 
 
 @dataclass

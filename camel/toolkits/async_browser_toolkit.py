@@ -26,6 +26,7 @@ import shutil
 import urllib.parse
 from copy import deepcopy
 from typing import (
+    TYPE_CHECKING,
     Any,
     BinaryIO,
     Coroutine,
@@ -41,7 +42,11 @@ from typing import (
 
 from PIL import Image, ImageDraw, ImageFont
 
-from camel.agents import ChatAgent
+# Import ChatAgent only for type checking to avoid circular imports at module import time.
+# Perform any runtime imports lazily within functions that actually need ChatAgent.
+if TYPE_CHECKING:
+    from camel.agents import ChatAgent
+
 from camel.logger import get_logger
 from camel.messages import BaseMessage
 from camel.models import BaseModelBackend, ModelFactory
@@ -185,7 +190,7 @@ def _get_str(d: Any, k: str) -> str:
     if isinstance(val, str):
         return val
     raise TypeError(
-        f"Expected a string for key '{k}', " f"but got {type(val).__name__}"
+        f"Expected a string for key '{k}', but got {type(val).__name__}"
     )
 
 
@@ -206,7 +211,7 @@ def _get_bool(d: Any, k: str) -> bool:
     if isinstance(val, bool):
         return val
     raise TypeError(
-        f"Expected a boolean for key '{k}', " f"but got {type(val).__name__}"
+        f"Expected a boolean for key '{k}', but got {type(val).__name__}"
     )
 
 
@@ -1797,7 +1802,7 @@ Your output should be in json format, including the following fields:
                 The task is not completed within the round limit. Please check 
                 the last round {self.history_window} information to see if 
                 there is any useful information:
-                <history>{self.history[-self.history_window:]}</history>
+                <history>{self.history[-self.history_window :]}</history>
             """
 
         else:

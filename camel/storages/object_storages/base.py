@@ -14,9 +14,10 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path, PurePath
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
-from camel.loaders import File
+if TYPE_CHECKING:
+    from camel.loaders import File
 
 
 class BaseObjectStorage(ABC):

@@ -18,17 +18,24 @@ from __future__ import annotations
 import base64
 import io
 import os
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-import requests
-from PIL import Image
-
+# Defer optional third-party imports to runtime to avoid ImportError when minimal
+# dependencies are installed. Import typing-only and intra-package names under
+# TYPE_CHECKING to prevent circular imports at module import time.
 from camel.embeddings import BaseEmbedding
-from camel.types.enums import EmbeddingModelType
+
+if TYPE_CHECKING:
+    from PIL import Image  # type: ignore
+
+    from camel.types.enums import EmbeddingModelType
+else:
+    EmbeddingModelType = Any  # type: ignore
+
 from camel.utils import api_keys_required
 
 
-class JinaEmbedding(BaseEmbedding[Union[str, Image.Image]]):
+class JinaEmbedding(BaseEmbedding):
     r"""Provides text and image embedding functionalities using Jina AI's API.
 
     Args:

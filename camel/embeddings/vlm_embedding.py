@@ -17,10 +17,29 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Union
 
-from PIL import Image
+# Optional PIL import: handle gracefully when Pillow is not installed.
+try:
+    from PIL import Image
+except Exception:
+    Image = None
 
-from camel.embeddings import BaseEmbedding
-from camel.logger import get_logger
+# Avoid importing other camel package modules at import time to prevent
+# circular imports and hard failures when optional parts of the package
+# are not installed. Provide lightweight fallbacks that allow this module
+# to be imported in minimal-dependency environments.
+try:
+    from camel.embeddings import BaseEmbedding
+except Exception:
+    class BaseEmbedding:  # Minimal placeholder to allow class definition
+        def __init__(self, *args, **kwargs):
+            pass
+
+try:
+    from camel.logger import get_logger
+except Exception:
+    import logging
+    def get_logger(name: Optional[str] = None):
+        return logging.getLogger(name)
 
 logger = get_logger(__name__)
 

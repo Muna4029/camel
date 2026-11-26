@@ -21,19 +21,13 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from PIL import Image
-
+# Defer optional / heavy imports (PIL.Image, OpenAIAudioModels, VideoDownloaderToolkit)
+# to runtime to avoid import-time failures in minimal dependency environments.
 from camel.logger import get_logger
 from camel.messages import BaseMessage
-from camel.models import BaseModelBackend, OpenAIAudioModels
 from camel.toolkits.base import BaseToolkit
 from camel.toolkits.function_tool import FunctionTool
 from camel.utils import MCPServer, dependencies_required
-
-from .video_download_toolkit import (
-    VideoDownloaderToolkit,
-    _capture_screenshot,
-)
 
 logger = get_logger(__name__)
 
@@ -129,6 +123,11 @@ class VideoAnalysisToolkit(BaseToolkit):
             download_directory or tempfile.mkdtemp()
         ).resolve()
 
+        # Import VideoDownloaderToolkit at runtime to avoid import-time/circular issues
+        from .video_download_toolkit import (
+            VideoDownloaderToolkit,
+        )
+
         self.video_downloader_toolkit = VideoDownloaderToolkit(
             download_directory=str(self._download_directory),
             cookies_path=cookies_path,
@@ -167,6 +166,9 @@ class VideoAnalysisToolkit(BaseToolkit):
         self.audio_models = None
         if self._use_audio_transcription:
             try:
+                # Import OpenAIAudioModels at runtime to avoid import-time failures
+                from camel.models import OpenAIAudioModels
+
                 self.audio_models = OpenAIAudioModels()
             except Exception as e:
                 logger.warning(

@@ -257,8 +257,8 @@ def interactive_region_from_dict(region: Dict[str, Any]) -> InteractiveRegion:
     return InteractiveRegion(
         tag_name=_get_str(region, "tag_name"),
         role=_get_str(region, "role"),
-        aria_name=_get_str(region, "aria-name"),
-        v_scrollable=_get_bool(region, "v-scrollable"),
+        aria_name=_get_str(region, "aria_name"),
+        v_scrollable=_get_bool(region, "v_scrollable"),
         rects=typed_rects,
     )
 
@@ -321,7 +321,8 @@ def _add_set_of_mark(
     rects_above: List[str] = list()  # Scroll up to see
     rects_below: List[str] = list()  # Scroll down to see
 
-    fnt = ImageFont.load_default(14)
+    # ImageFont.load_default() does not accept a size argument.
+    fnt = ImageFont.load_default()
     base = screenshot.convert("L").convert("RGBA")
     overlay = Image.new("RGBA", base.size)
 
@@ -556,7 +557,11 @@ class BaseBrowser:
             f"Do you want to analyze the video on the current "
             f"page({current_url})? This operation may take a long time.(y/n): "
         )
-        user_confirmation = input(confirmation_message)
+        try:
+            user_confirmation = input(confirmation_message)
+        except (EOFError, KeyboardInterrupt):
+            logger.warning("Non-interactive environment detected; cancelling video analysis.")
+            return "User cancelled the video analysis."
 
         if user_confirmation.lower() not in ['y', 'yes']:
             return "User cancelled the video analysis."
@@ -564,6 +569,8 @@ class BaseBrowser:
         model = None
         if hasattr(self, 'web_agent_model'):
             model = self.web_agent_model
+
+        # Local import to avoid heavy/optional dependency at module import time
 
         video_analyzer = VideoAnalysisToolkit(model=model)
         result = video_analyzer.ask_question_about_video(current_url, question)
@@ -854,7 +861,18 @@ class BaseBrowser:
             target.fill(text)
         except (TimeoutError, Exception) as e:
             logger.debug(f"Error during fill operation: {e}")
-            target.press_sequentially(text)
+            # Fallback to typing the text if direct fill is not supported
+            try:
+                if hasattr(target, "type"):
+                    target.type(text)
+                elif hasattr(target, "press_sequentially"):
+                    target.press_sequentially(text)
+                else:
+                    # Last resort: press keys sequentially
+                    for ch in text:
+                        target.press(ch)
+            except Exception as e2:
+                logger.debug(f"Fallback typing failed: {e2}")
 
         target.press("Enter")
         self._wait_for_load()
@@ -903,10 +921,11 @@ class BaseBrowser:
         targeted text. It is equivalent to pressing Ctrl + F and searching for
         the text.
         """
-        # ruff: noqa: E501
+        # Safely escape the search text for JS by using json.dumps
+        safe_text = json.dumps(search_text)
         script = f"""
         (function() {{
-            let text = "{search_text}";
+            let text = {safe_text};
             let found = window.find(text);
             if (!found) {{
                 let elements = document.querySelectorAll("*:not(script):not(style)"); 
@@ -1077,7 +1096,10 @@ class BrowserToolkit(BaseToolkit):
         self.web_agent.reset()
         self.planning_agent.reset()
         self.history = []
-        os.makedirs(self.browser.cache_dir, exist_ok=True)
+        # Only create cache directory if a cache_dir is configured
+        cache_dir = getattr(self.browser, "cache_dir", None)
+        if cache_dir:
+            os.makedirs(cache_dir, exist_ok=True)
 
     def _initialize_agent(self) -> Tuple["ChatAgent", "ChatAgent"]:
         r"""Initialize the agent."""
@@ -1135,7 +1157,7 @@ tasks which need multi-step browser interaction.
         if detailed_plan is not None:
             detailed_plan_prompt = f"""
 Here is a plan about how to solve the task step-by-step which you must follow:
-<detailed_plan>{detailed_plan}<detailed_plan>
+<detailed_plan>{detailed_plan}</detailed_plan>
         """
 
         observe_prompt = f"""
@@ -1414,7 +1436,7 @@ Here are the overall task:
 <overall_task>{task_prompt}</overall_task>
 
 In order to solve the task, we made a detailed plan previously. Here is the detailed plan:
-<detailed plan>{detailed_plan}</detailed plan>
+<detailed_plan>{detailed_plan}</detailed_plan>
 
 According to the task above, we have made a series of observations, reasonings, and actions. Here are the latest {self.history_window} trajectory (at most) we have taken:
 <history>{self.history[-self.history_window :]}</history>
