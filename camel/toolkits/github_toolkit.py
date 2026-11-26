@@ -18,7 +18,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 from camel.toolkits import FunctionTool
 from camel.toolkits.base import BaseToolkit
-from camel.utils import MCPServer, dependencies_required
+from camel.utils import MCPServer
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,6 @@ class GithubToolkit(BaseToolkit):
             `get_github_access_token` method.
     """
 
-    @dependencies_required('github')
     def __init__(
         self,
         repo_name: str,
