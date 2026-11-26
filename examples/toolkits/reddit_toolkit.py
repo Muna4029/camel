@@ -12,7 +12,30 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-from camel.toolkits import RedditToolkit
+import warnings
+
+try:
+    from camel.toolkits import RedditToolkit
+except Exception as e:
+    warnings.warn(
+        "Optional dependency 'camel' is not available; creating a placeholder RedditToolkit."
+        " Some functionality may be disabled. Error: {}".format(e)
+    )
+
+    class RedditToolkit:
+        """Minimal placeholder for environments without the 'camel' package.
+
+        This placeholder prevents import-time failures in CI when the 'camel' distribution
+        cannot be installed due to conflicting dependencies. Attempting to instantiate
+        or use this placeholder will raise a clear RuntimeError so callers can handle
+        the absence of the real implementation.
+        """
+
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError(
+                "RedditToolkit is not available because the 'camel' package could not be imported."
+            )
+
 
 reddit_toolkit = RedditToolkit()
 
