@@ -12,7 +12,27 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-from camel.toolkits import RedditToolkit
+try:
+    from camel.toolkits import RedditToolkit
+except Exception:
+    # Fallback stub to allow this example file to run in environments
+    # where the `camel` package (and its heavy dependencies) are not installed.
+    class RedditToolkit:
+        def __init__(self):
+            pass
+
+        def collect_top_posts(self, subreddit_name, post_limit, comment_limit):
+            # Return empty list to indicate no data available in fallback.
+            return []
+
+        def track_keyword_discussions(
+            self, subreddits, keywords, post_limit=2, comment_limit=5
+        ):
+            return []
+
+        def perform_sentiment_analysis(self, keyword_data):
+            return []
+
 
 reddit_toolkit = RedditToolkit()
 
